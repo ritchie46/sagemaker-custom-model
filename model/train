@@ -1,0 +1,40 @@
+#!/usr/bin/env python
+
+# Some boilerplate code. Sagemaker expects to have a model definition in /opt/ml/model
+# We copy the model to that location, however we don't use it in inference
+import os
+import sys
+import traceback
+import shutil
+
+# These are the paths to where SageMaker mounts interesting things in your container.
+prefix = '/opt/ml/'
+
+input_path = prefix + 'input/data'
+output_path = os.path.join(prefix, 'output')
+model_path = os.path.join(prefix, 'model')
+param_path = os.path.join(prefix, 'input/config/hyperparameters.json')  # make it a dict with kwargs
+
+
+def train():
+    try:
+        os.makedirs('/opt/ml/model/', exist_ok=True)
+        shutil.copy2('/opt/program/model.pkl', '/opt/ml/model/model.pkl')
+        print('Training complete!!')
+    except Exception as e:
+        # Write out an error file. This will be returned as the failureReason in the
+        # DescribeTrainingJob result.
+        trc = traceback.format_exc()
+        with open(os.path.join(output_path, 'failure'), 'w') as s:
+            s.write('Exception during training: ' + str(e) + '\n' + trc)
+        # Printing this causes the exception to be in the training job logs, as well.
+        print('Exception during training: ' + str(e) + '\n' + trc)
+        # A non-zero exit code causes the training job to be marked as Failed.
+        sys.exit(255)
+
+
+if __name__ == '__main__':
+    train()
+
+    # A zero exit code causes the job to be marked a Succeeded.
+    sys.exit(0)
