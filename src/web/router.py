@@ -1,4 +1,4 @@
-from model import ModelWrap
+from model import modelwrapper
 from model.data import prepare_data
 from wsgi import flask, app
 import io
@@ -9,7 +9,7 @@ import pandas as pd
 def ping():
     """Determine if the container is working and healthy. In this sample container, we declare
     it healthy if we can load the model successfully."""
-    health = ModelWrap.get_model() is not None  # You can insert a health check here
+    health = modelwrapper.get_model() is not None  # You can insert a health check here
 
     status = 200 if health else 404
     return flask.Response(response='\n', status=status, mimetype='application/json')
@@ -26,15 +26,23 @@ def transformation():
         data = flask.request.data.decode('utf-8')
         s = io.StringIO(data)
         df = pd.read_csv(s)
-        x = prepare_data(df, ModelWrap.columns, ModelWrap.scaler, ModelWrap.mean)
 
     else:
-        return flask.Response(response='This predictor only supports CSV data', status=415, mimetype='text/plain')
+        print('No csv, content type was: ', flask.request.content_type)
+        try:
+            print('Try parquet')
+            b = io.BytesIO(flask.request.data)
+            df = pd.read_parquet(b)
+        except Exception as e:
+            print('Excetpion: ', e)
+            return flask.Response(response='This predictor only supports CSV or Parquet data',
+                                  status=415, mimetype='text/plain')
 
+    x = prepare_data(df, modelwrapper.columns, modelwrapper.scaler, modelwrapper.mean)
     print('Invoked with {} records'.format(x.shape[0]))
 
     # Do the prediction
-    predictions = ModelWrap.predict(x)
+    predictions = modelwrapper.predict(x)
 
     # Convert from numpy back to CSV
     out = io.StringIO()
