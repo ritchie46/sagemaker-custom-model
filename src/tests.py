@@ -34,6 +34,5 @@ class MainTests(InitTest):
         f = cloudhelper.open_s3_file(app.config['BUCKET'], app.config['TEST_DATA'])
 
         response = self.app.post('/invocations', data=f.read().decode('utf-8'), content_type='text/csv')
-        print(response)
         self.assertEqual(response.status_code, 200)
 

@@ -23,6 +23,6 @@ ENV PATH="/opt/program:${PATH}"
 ENV MODEL_PATH="/opt/ml/model"
 
 # Set up the program in the image
-COPY model /opt/program
+COPY src /opt/program
 WORKDIR /opt/program
 
